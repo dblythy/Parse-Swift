@@ -15,14 +15,14 @@ class ParseCloudTests: XCTestCase { // swiftlint:disable:this type_body_length
     struct Cloud: ParseCloud {
         typealias ReturnType = String? // swiftlint:disable:this nesting
 
-        // These are required by ParseObject
+        // Those are required for Object
         var functionJobName: String
     }
 
     struct Cloud2: ParseCloud {
         typealias ReturnType = String? // swiftlint:disable:this nesting
 
-        // These are required by ParseObject
+        // Those are required for Object
         var functionJobName: String
 
         // Your custom keys
@@ -32,7 +32,7 @@ class ParseCloudTests: XCTestCase { // swiftlint:disable:this type_body_length
     struct Cloud3: ParseCloud {
         typealias ReturnType = [String: String] // swiftlint:disable:this nesting
 
-        // These are required by ParseObject
+        // Those are required for Object
         var functionJobName: String
     }
 
@@ -56,7 +56,7 @@ class ParseCloudTests: XCTestCase { // swiftlint:disable:this type_body_length
     override func tearDownWithError() throws {
         try super.tearDownWithError()
         MockURLProtocol.removeAll()
-        #if !os(Linux) && !os(Android) && !os(Windows)
+        #if !os(Linux) && !os(Android)
         try KeychainStore.shared.deleteAll()
         #endif
         try ParseStorage.shared.deleteAll()
@@ -99,17 +99,13 @@ class ParseCloudTests: XCTestCase { // swiftlint:disable:this type_body_length
         XCTAssertEqual(decoded, expected, "\"functionJobName\" key should be skipped by ParseEncoder")
     }
 
+    #if !os(Linux) && !os(Android)
     func testDebugString() {
         let cloud = Cloud2(functionJobName: "test", customKey: "parse")
         let expected = "{\"customKey\":\"parse\",\"functionJobName\":\"test\"}"
         XCTAssertEqual(cloud.debugDescription, expected)
     }
-
-    func testDescription() {
-        let cloud = Cloud2(functionJobName: "test", customKey: "parse")
-        let expected = "{\"customKey\":\"parse\",\"functionJobName\":\"test\"}"
-        XCTAssertEqual(cloud.description, expected)
-    }
+    #endif
 
     func testCallFunctionCommand() throws {
         let cloud = Cloud(functionJobName: "test")
@@ -362,10 +358,7 @@ class ParseCloudTests: XCTestCase { // swiftlint:disable:this type_body_length
 
     func testCustomError() {
 
-        guard let encoded: Data = "{\"error\":\"Error: Custom Error\",\"code\":2000}".data(using: .utf8) else {
-            XCTFail("Could not unwrap encoded data")
-            return
-        }
+        let encoded: Data = "{\"error\":\"Error: Custom Error\",\"code\":2000}".data(using: .utf8)!
 
         MockURLProtocol.mockRequests { _ in
             return MockURLResponse(data: encoded, statusCode: 200, delay: 0.0)
@@ -378,13 +371,13 @@ class ParseCloudTests: XCTestCase { // swiftlint:disable:this type_body_length
             if let error = error as? ParseError {
                 XCTAssertEqual(error.code, .other)
                 XCTAssertEqual(error.message, "Error: Custom Error")
-                XCTAssertEqual(error.otherCode, 2000)
+                XCTAssertEqual(error.intCode, 2000)
             } else {
                 XCTFail("Should have thrown ParseError")
             }
         }
     }
-
+    
     func jobAsync(serverResponse: [String: String], callbackQueue: DispatchQueue) {
 
         let expectation1 = XCTestExpectation(description: "Logout user1")
